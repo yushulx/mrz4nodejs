@@ -15,7 +15,7 @@
                         "-std=c++11"
                     ],
                     'ldflags': [
-                                "-Wl,-rpath=$ORIGIN"
+                                "-Wl,-rpath,'$$ORIGIN'"
                     ],
                     
                     'libraries': [

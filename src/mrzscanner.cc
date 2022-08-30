@@ -84,8 +84,8 @@ static void DetectionWorking(uv_work_t *req)
 
 			ret = DLR_RecognizeByBuffer(worker->handler, &data, "locr");
 		}
+		break;
 	}
-	break;
 	default:
 	{
 		ret = DLR_RecognizeByFile(worker->handler, worker->filename, "locr");

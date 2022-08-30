@@ -6,13 +6,17 @@ MrzScanner.initLicense('DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUi
 var obj = new MrzScanner();
 var ret = obj.loadModel(path.dirname(require.resolve('./index')));
 (async function () {
-    var result = await obj.decodeFileAsync('images/1.png');
-    console.log(result);
+    try {
+        var result = await obj.decodeFileAsync('images/1.png');
+        console.log(result);
 
-    if (result.length == 2) {
-        console.log(obj.parseTwoLines(result[0].text, result[1].text));
-    }
-    else if (result.length == 3) {
-        console.log(obj.parseThreeLines(result[0].text, result[1].text, result[2].text));
+        if (result.length == 2) {
+            console.log(obj.parseTwoLines(result[0].text, result[1].text));
+        }
+        else if (result.length == 3) {
+            console.log(obj.parseThreeLines(result[0].text, result[1].text, result[2].text));
+        }
+    } catch (error) {
+        console.log(error);
     }
 })();

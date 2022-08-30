@@ -46,9 +46,12 @@ Basic steps:
 4. Call `decodeFileAsync()` method to recognize MRZ from an image file. 
     ```js
     (async function () {
-        var result = await obj.decodeFileAsync('<image-file-path>');
-        console.log(result);
-
+        try {
+            var result = await obj.decodeFileAsync('<image-file-path>');
+            console.log(result);
+        } catch (error) {
+            console.log(error);
+        }
     })();
     ```
 5. Parse the MRZ information:
