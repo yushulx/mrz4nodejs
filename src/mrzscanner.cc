@@ -189,7 +189,7 @@ void InitLicense(const FunctionCallbackInfo<Value> &args)
 	char errorMsgBuffer[512];
 	// Click https://www.dynamsoft.com/customer/license/trialLicense/?product=MRZ to get a trial license.
 	int ret = DLR_InitLicense(pszLicense, errorMsgBuffer, 512);
-	printf("InitLicense: %s", errorMsgBuffer);
+	printf("InitLicense: %s\n", errorMsgBuffer);
 	args.GetReturnValue().Set(Number::New(isolate, ret));
 }
 

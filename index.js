@@ -23,12 +23,12 @@ var MrzScanner = /** @class */ (function () {
     MrzScanner.getVersionNumber = function () {
         return mrzscanner.getVersionNumber();
     };
-    MrzScanner.prototype.loadModel = function () {
-        var modelPath = path.join(process.cwd(), 'MRZ.json');
+    MrzScanner.prototype.loadModel = function (modelDir) {
+        var modelPath = path.join(modelDir, 'MRZ.json');
         var json = fs.readFileSync(modelPath);
         var config = JSON.parse(json);
         if (config['CharacterModelArray'][0]['DirectoryPath'] === 'model') {
-            config['CharacterModelArray'][0]['DirectoryPath'] = path.join(process.cwd(), 'model');
+            config['CharacterModelArray'][0]['DirectoryPath'] = path.join(modelDir, 'model');
             fs.writeFileSync(modelPath, JSON.stringify(config));
         }
         return this.obj.loadModel(modelPath);

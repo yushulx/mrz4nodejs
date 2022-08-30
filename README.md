@@ -25,22 +25,37 @@ Get a [30-day FREE trial license](https://www.dynamsoft.com/customer/license/tri
 - **Windows**
 - **Linux**
 
-## Quick Usage
+## Usage
 
-```javascript
-const MrzScanner = require('mrz4nodejs');
-console.log(MrzScanner.getVersionNumber());
-MrzScanner.initLicense('DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==');
+Basic steps:
+1. Set the license key.
 
-var obj = new MrzScanner();
-obj.loadModel();
-(async function () {
-    var result = await obj.decodeFileAsync('<image-path>');
-    console.log(result);
+    ```js
+    MrzScanner.initLicense('DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==');
+    ```
+2. Create an MRZ scanner object.
+    ```js
+    var obj = new MrzScanner();
+    ```
+3. Load the MRZ model via the `mrz4nodejs` module path.
 
-})();
+    ```js
+    var ret = obj.loadModel(path.dirname(require.resolve('mrz4nodejs')));
+    ```
 
-```
+4. Call `decodeFileAsync()` method to recognize MRZ from an image file. 
+    ```js
+    (async function () {
+        var result = await obj.decodeFileAsync('<image-file-path>');
+        console.log(result);
+
+    })();
+    ```
+
+## Sample Code
+
+[https://github.com/yushulx/mrz4nodejs/blob/main/test.js](https://github.com/yushulx/mrz4nodejs/blob/main/test.js)
+
 
 ![Node.js MRZ scanner SDK](https://www.dynamsoft.com/codepool/img/2022/02/node-js-mrz-sdk.png)
 

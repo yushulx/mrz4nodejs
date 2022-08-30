@@ -29,12 +29,12 @@ class MrzScanner {
         return mrzscanner.getVersionNumber();
     }
 
-    loadModel(): number {
-        let modelPath = path.join(process.cwd(), 'MRZ.json');
+    loadModel(modelDir: string): number {
+        let modelPath = path.join(modelDir, 'MRZ.json');
         let json = fs.readFileSync(modelPath);
         let config = JSON.parse(json);
         if (config['CharacterModelArray'][0]['DirectoryPath'] === 'model') {
-            config['CharacterModelArray'][0]['DirectoryPath'] = path.join(process.cwd(), 'model');
+            config['CharacterModelArray'][0]['DirectoryPath'] = path.join(modelDir, 'model');
             fs.writeFileSync(modelPath, JSON.stringify(config));
         }
         return this.obj.loadModel(modelPath);
