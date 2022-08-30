@@ -1,6 +1,6 @@
 {
   "name": "mrz4nodejs",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Node.js bindings to Dynamsoft MRZ C/C++ SDK.",
   "keywords": [
     "MRZ",
@@ -29,5 +29,9 @@
   "gypfile": true,
   "devDependencies": {
     "@types/node": "^18.7.14"
-  }
+  },
+  "files": [
+    "MRZ.json",
+    "model/*"
+  ]
 }
