@@ -10,6 +10,12 @@ Get a [30-day FREE trial license](https://www.dynamsoft.com/customer/license/tri
 ## Pre-requisites
 - [Node.js](https://nodejs.org/en/download/)
 - Platform-specific C/C++ compiler
+- TypeScript
+
+    ```bash
+    npm install -g typescript
+    npm install --save @types/node
+    ```
 - node-gyp
 
     ```
