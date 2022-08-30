@@ -51,6 +51,16 @@ Basic steps:
 
     })();
     ```
+5. Parse the MRZ information:
+
+    ```js
+    if (result.length == 2) {
+        console.log(obj.parseTwoLines(result[0].text, result[1].text));
+    }
+    else if (result.length == 3) {
+        console.log(obj.parseThreeLines(result[0].text, result[1].text, result[2].text));
+    }
+    ```
 
 ## Sample Code
 
