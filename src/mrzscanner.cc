@@ -9,28 +9,29 @@
 using namespace v8;
 
 #define MRZ_NO_MEMORY 0
-#define MRZ_SUCCESS   1
+#define MRZ_SUCCESS 1
 #define DEFAULT_MEMORY_SIZE 4096
 
-typedef enum {
+typedef enum
+{
 	NO_BUFFER,
 	RGB_BUFFER,
 } BufferType;
 
 struct MRZWorker
 {
-	void* handler;
-    uv_work_t request;              // libuv
-	Persistent<Function> callback;	// javascript callback		
-	char filename[128];				// file name
-	DLR_ResultArray *pResults;	// result pointer
-	unsigned char *buffer;		    
-	int size;						// file size
-	int errorCode;					// detection error code
-	int width;						// image width
-	int height; 					// image height
-	BufferType bufferType;			// buffer type
-	int stride;					// image stride
+	void *handler;
+	uv_work_t request;			   // libuv
+	Persistent<Function> callback; // javascript callback
+	char filename[128];			   // file name
+	DLR_ResultArray *pResults;	   // result pointer
+	unsigned char *buffer;
+	int size;			   // file size
+	int errorCode;		   // detection error code
+	int width;			   // image width
+	int height;			   // image height
+	BufferType bufferType; // buffer type
+	int stride;			   // image stride
 };
 
 /*
@@ -39,7 +40,7 @@ struct MRZWorker
 static void DetectionWorking(uv_work_t *req)
 {
 	// get the reference to MRZWorker
-    MRZWorker *worker = static_cast<MRZWorker *>(req->data);
+	MRZWorker *worker = static_cast<MRZWorker *>(req->data);
 	if (!worker->handler)
 	{
 		printf("MRZ handler not initialized.\n");
@@ -51,47 +52,47 @@ static void DetectionWorking(uv_work_t *req)
 
 	// decode mrz image
 	int ret = 0;
-	switch(worker->bufferType)
+	switch (worker->bufferType)
 	{
-		case RGB_BUFFER:
-			{
-				if (worker->buffer)
-				{
-					int width = worker->width, height = worker->height, stride = worker->stride;
-					ImagePixelFormat format = IPF_RGB_888;
+	case RGB_BUFFER:
+	{
+		if (worker->buffer)
+		{
+			int width = worker->width, height = worker->height, stride = worker->stride;
+			ImagePixelFormat format = IPF_RGB_888;
 
-					if (width == stride)
-					{
-						format = IPF_GRAYSCALED;
-					}
-					else if (width * 3 == stride)
-					{
-						format = IPF_RGB_888;
-					}
-					else if (width * 4 == stride)
-					{
-						format = IPF_ARGB_8888;
-					}
-
-					ImageData data;
-					data.bytes = worker->buffer;
-					data.width = width;
-					data.height = height;
-					data.stride = stride;
-					data.format = format;
-					data.bytesLength = stride * height;
-					
-					ret = DLR_RecognizeByBuffer(worker->handler, &data, "locr");
-				}
-			}
-			break;
-		default:
+			if (width == stride)
 			{
-				ret = DLR_RecognizeByFile(worker->handler, worker->filename, "locr");
+				format = IPF_GRAYSCALED;
 			}
+			else if (width * 3 == stride)
+			{
+				format = IPF_RGB_888;
+			}
+			else if (width * 4 == stride)
+			{
+				format = IPF_ARGB_8888;
+			}
+
+			ImageData data;
+			data.bytes = worker->buffer;
+			data.width = width;
+			data.height = height;
+			data.stride = stride;
+			data.format = format;
+			data.bytesLength = stride * height;
+
+			ret = DLR_RecognizeByBuffer(worker->handler, &data, "locr");
+		}
 	}
-	
-	if (ret) 
+	break;
+	default:
+	{
+		ret = DLR_RecognizeByFile(worker->handler, worker->filename, "locr");
+	}
+	}
+
+	if (ret)
 	{
 		printf("Detection error: %s\n", DLR_GetErrorString(ret));
 	}
@@ -106,14 +107,14 @@ static void DetectionWorking(uv_work_t *req)
 /*
  *	uv_after_work_cb
  */
-static void DetectionDone(uv_work_t *req,int status)
+static void DetectionDone(uv_work_t *req, int status)
 {
-	Isolate* isolate = Isolate::GetCurrent();
+	Isolate *isolate = Isolate::GetCurrent();
 	HandleScope scope(isolate);
 	Local<Context> context = isolate->GetCurrentContext();
 
-    // get the reference to MRZWorker
-    MRZWorker *worker = static_cast<MRZWorker *>(req->data);
+	// get the reference to MRZWorker
+	MRZWorker *worker = static_cast<MRZWorker *>(req->data);
 
 	// get mrz results
 	DLR_ResultArray *pResults = worker->pResults;
@@ -122,9 +123,10 @@ static void DetectionDone(uv_work_t *req,int status)
 	// array for storing mrz results
 	Local<Array> mrzResults = Array::New(isolate);
 
-	if (pResults) 
+	if (pResults)
 	{
 		int count = pResults->resultsCount;
+		int index = 0;
 		for (int i = 0; i < count; i++)
 		{
 			DLR_Result *mrzResult = pResults->results[i];
@@ -154,7 +156,8 @@ static void DetectionDone(uv_work_t *req,int status)
 				result->DefineOwnProperty(context, String::NewFromUtf8(isolate, "y3", NewStringType::kNormal).ToLocalChecked(), Number::New(isolate, y3));
 				result->DefineOwnProperty(context, String::NewFromUtf8(isolate, "x4", NewStringType::kNormal).ToLocalChecked(), Number::New(isolate, x4));
 				result->DefineOwnProperty(context, String::NewFromUtf8(isolate, "y4", NewStringType::kNormal).ToLocalChecked(), Number::New(isolate, y4));
-				mrzResults->Set(context, Number::New(isolate, i), result);
+				mrzResults->Set(context, Number::New(isolate, index), result);
+				index += 1;
 			}
 		}
 
@@ -162,23 +165,23 @@ static void DetectionDone(uv_work_t *req,int status)
 		DLR_FreeResults(&pResults);
 	}
 
-    // run the callback
+	// run the callback
 	const unsigned argc = 2;
 	Local<Number> err = Number::New(isolate, errorCode);
 	Local<Value> argv[argc] = {err, mrzResults};
 	Local<Function> cb = Local<Function>::New(isolate, worker->callback);
-    cb->Call(context, Null(isolate), argc, argv);
+	cb->Call(context, Null(isolate), argc, argv);
 
 	// release memory of MRZWorker
-    delete worker;
+	delete worker;
 }
 
 /*
  *	initLicense(license)
  */
-void InitLicense(const FunctionCallbackInfo<Value>& args) 
+void InitLicense(const FunctionCallbackInfo<Value> &args)
 {
-	Isolate* isolate = args.GetIsolate();
+	Isolate *isolate = args.GetIsolate();
 	Local<Context> context = isolate->GetCurrentContext();
 
 	String::Utf8Value license(isolate, args[0]);
@@ -186,84 +189,57 @@ void InitLicense(const FunctionCallbackInfo<Value>& args)
 	char errorMsgBuffer[512];
 	// Click https://www.dynamsoft.com/customer/license/trialLicense/?product=MRZ to get a trial license.
 	int ret = DLR_InitLicense(pszLicense, errorMsgBuffer, 512);
-	printf("Version: %s, DLR_InitLicense: %s\n", DLR_GetVersion(), errorMsgBuffer);
-
+	printf("InitLicense: %s", errorMsgBuffer);
 	args.GetReturnValue().Set(Number::New(isolate, ret));
-}
-
-/*
- *	create()
- *
- *  Create MRZ instance
- */
-void Create(const FunctionCallbackInfo<Value>& args) 
-{
-	Isolate* isolate = Isolate::GetCurrent();
-	void* handler = DLR_CreateInstance();
-	printf("Create handler: %p\n", handler);
-	args.GetReturnValue().Set(Number::New(isolate, (unsigned int)handler));
-}
-
-/*
- *	destroy()
- * 
- *  Destroy MRZ instance
- */
-void Destroy(const FunctionCallbackInfo<Value>& args) 
-{
-	Isolate* isolate = Isolate::GetCurrent();
-	Local<Context> context = isolate->GetCurrentContext();
-
-	void* handler = (void *)(args[0]->Uint32Value(context).ToChecked());
-	DLR_DestroyInstance(handler);
 }
 
 /*
  *	decodeFileAsync(fileName, mrzTypes, callback, template)
  */
-void DecodeFileAsync(const FunctionCallbackInfo<Value>& args) 
+void MrzScanner::DecodeFileAsync(const FunctionCallbackInfo<Value> &args)
 {
-	Isolate* isolate = args.GetIsolate();
+	Isolate *isolate = args.GetIsolate();
+	MrzScanner *obj = ObjectWrap::Unwrap<MrzScanner>(args.Holder());
 	Local<Context> context = isolate->GetCurrentContext();
 
 	// get arguments
-	void* handler = (void *)(args[0]->Uint32Value(context).ToChecked());
-	String::Utf8Value fileName(isolate, args[1]); // file name
+	String::Utf8Value fileName(isolate, args[0]); // file name
 	char *pFileName = *fileName;
-	Local<Function> cb = Local<Function>::Cast(args[2]); // javascript callback function
+	Local<Function> cb = Local<Function>::Cast(args[1]); // javascript callback function
 
 	// initialize MRZWorker
 	MRZWorker *worker = new MRZWorker;
-	worker->handler = handler;
+	worker->handler = obj->handler;
 	worker->request.data = worker;
 	strcpy(worker->filename, pFileName);
 	worker->callback.Reset(isolate, cb);
 	worker->pResults = NULL;
 	worker->buffer = NULL;
 	worker->bufferType = NO_BUFFER;
-	
+
 	uv_queue_work(uv_default_loop(), &worker->request, (uv_work_cb)DetectionWorking, (uv_after_work_cb)DetectionDone);
 }
 
 /*
  *	decodeBuffer(buffer, width, height, stride, mrzTypes, callback, template)
  */
-void DecodeBufferAsync(const FunctionCallbackInfo<Value>& args) {
-	Isolate* isolate = Isolate::GetCurrent();
+void MrzScanner::DecodeBufferAsync(const FunctionCallbackInfo<Value> &args)
+{
+	Isolate *isolate = Isolate::GetCurrent();
+	MrzScanner *obj = ObjectWrap::Unwrap<MrzScanner>(args.Holder());
 	Local<Context> context = isolate->GetCurrentContext();
 
 	// get arguments
-	void* handler = (void *)(args[0]->Uint32Value(context).ToChecked());
-	unsigned char* buffer = (unsigned char*) node::Buffer::Data(args[1]); // file stream
-	int width = args[2]->Int32Value(context).ToChecked();	// image width
-	int height = args[3]->Int32Value(context).ToChecked();	// image height
-	int stride = args[4]->Int32Value(context).ToChecked(); // stride
-	int iFormat = args[5]->Int32Value(context).ToChecked(); // mrz types
-	Local<Function> cb = Local<Function>::Cast(args[6]); // javascript callback function
+	unsigned char *buffer = (unsigned char *)node::Buffer::Data(args[0]); // file stream
+	int width = args[1]->Int32Value(context).ToChecked();				  // image width
+	int height = args[2]->Int32Value(context).ToChecked();				  // image height
+	int stride = args[3]->Int32Value(context).ToChecked();				  // stride
+	int iFormat = args[4]->Int32Value(context).ToChecked();				  // mrz types
+	Local<Function> cb = Local<Function>::Cast(args[5]);				  // javascript callback function
 
 	// initialize MRZWorker
 	MRZWorker *worker = new MRZWorker;
-	worker->handler = handler;
+	worker->handler = obj->handler;
 	worker->request.data = worker;
 	worker->callback.Reset(isolate, cb);
 	worker->pResults = NULL;
@@ -281,60 +257,49 @@ void DecodeBufferAsync(const FunctionCallbackInfo<Value>& args) {
  *
  *	returns the version number of the dll
  */
-void GetVersionNumber(const FunctionCallbackInfo<Value>& args) {
-	Isolate* isolate = Isolate::GetCurrent();
+void GetVersionNumber(const FunctionCallbackInfo<Value> &args)
+{
+	Isolate *isolate = Isolate::GetCurrent();
 	args.GetReturnValue().Set(String::NewFromUtf8(
-		isolate, DLR_GetVersion()).ToLocalChecked());
+								  isolate, DLR_GetVersion())
+								  .ToLocalChecked());
 }
 
-/*
- *	LoadModel(fileName)
- */
-void LoadModel(const FunctionCallbackInfo<Value>& args) {
-	Isolate* isolate = Isolate::GetCurrent();
+MrzScanner::MrzScanner()
+{
+	handler = DLR_CreateInstance();
+}
+
+MrzScanner::~MrzScanner()
+{
+	DLR_DestroyInstance(handler);
+}
+
+void MrzScanner::Init(Local<Object> exports)
+{
+	Isolate *isolate = exports->GetIsolate();
 	Local<Context> context = isolate->GetCurrentContext();
 
-	// Get arguments
-	void* handler = (void *)(args[0]->IntegerValue(context).ToChecked());
-	printf("load model handler: %p\n", handler);
-	String::Utf8Value fileName(isolate, args[1]); // file name
-	char *pFileName = *fileName;
+	Local<ObjectTemplate> addon_data_tpl = ObjectTemplate::New(isolate);
+	addon_data_tpl->SetInternalFieldCount(1); // 1 field for the MrzScanner::New()
+	Local<Object> addon_data =
+		addon_data_tpl->NewInstance(context).ToLocalChecked();
 
-    char errorMsgBuffer[512];
-    int ret = DLR_AppendSettingsFromFile(handler, pFileName, errorMsgBuffer, 512);
-    printf("Load MRZ model: %s\n", errorMsgBuffer);
+	// Prepare constructor template
+	Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New, addon_data);
+	tpl->SetClassName(String::NewFromUtf8(isolate, "MrzScanner").ToLocalChecked());
+	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
-	args.GetReturnValue().Set(Number::New(isolate, ret));
-}
+	// Prototype
+	NODE_SET_PROTOTYPE_METHOD(tpl, "loadModel", LoadModel);
+	NODE_SET_PROTOTYPE_METHOD(tpl, "decodeFileAsync", DecodeFileAsync);
+	NODE_SET_PROTOTYPE_METHOD(tpl, "decodeBufferAsync", DecodeBufferAsync);
 
-MrzScanner::MrzScanner(double value) : value_(value) {
-}
-
-MrzScanner::~MrzScanner() {
-}
-
-void MrzScanner::Init(Local<Object> exports) {
-  Isolate* isolate = exports->GetIsolate();
-  Local<Context> context = isolate->GetCurrentContext();
-
-  Local<ObjectTemplate> addon_data_tpl = ObjectTemplate::New(isolate);
-  addon_data_tpl->SetInternalFieldCount(1);  // 1 field for the MrzScanner::New()
-  Local<Object> addon_data =
-      addon_data_tpl->NewInstance(context).ToLocalChecked();
-
-  // Prepare constructor template
-  Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New, addon_data);
-  tpl->SetClassName(String::NewFromUtf8(isolate, "MrzScanner").ToLocalChecked());
-  tpl->InstanceTemplate()->SetInternalFieldCount(1);
-
-  // Prototype
-  NODE_SET_PROTOTYPE_METHOD(tpl, "plusOne", PlusOne);
-
-  Local<Function> constructor = tpl->GetFunction(context).ToLocalChecked();
-  addon_data->SetInternalField(0, constructor);
-  exports->Set(context, String::NewFromUtf8(
-      isolate, "MrzScanner").ToLocalChecked(),
-      constructor).FromJust();
+	Local<Function> constructor = tpl->GetFunction(context).ToLocalChecked();
+	addon_data->SetInternalField(0, constructor);
+	exports->Set(context, String::NewFromUtf8(isolate, "MrzScanner").ToLocalChecked(),
+				 constructor)
+		.FromJust();
 }
 
 void MrzScanner::New(const FunctionCallbackInfo<Value>& args) {
@@ -343,9 +308,7 @@ void MrzScanner::New(const FunctionCallbackInfo<Value>& args) {
 
   if (args.IsConstructCall()) {
     // Invoked as constructor: `new MrzScanner(...)`
-    double value = args[0]->IsUndefined() ?
-        0 : args[0]->NumberValue(context).FromMaybe(0);
-    MrzScanner* obj = new MrzScanner(value);
+    MrzScanner* obj = new MrzScanner();
     obj->Wrap(args.This());
     args.GetReturnValue().Set(args.This());
   } else {
@@ -360,22 +323,28 @@ void MrzScanner::New(const FunctionCallbackInfo<Value>& args) {
   }
 }
 
-void MrzScanner::PlusOne(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
+/*
+ *	LoadModel(fileName)
+ */
+void MrzScanner::LoadModel(const FunctionCallbackInfo<Value> &args)
+{
+	Isolate *isolate = args.GetIsolate();
 
-  MrzScanner* obj = ObjectWrap::Unwrap<MrzScanner>(args.Holder());
-  obj->value_ += 1;
+	MrzScanner *obj = ObjectWrap::Unwrap<MrzScanner>(args.Holder());
 
-  args.GetReturnValue().Set(Number::New(isolate, obj->value_));
+	String::Utf8Value fileName(isolate, args[0]); // file name
+	char *pFileName = *fileName;
+
+	char errorMsgBuffer[512];
+	int ret = DLR_AppendSettingsFromFile(obj->handler, pFileName, errorMsgBuffer, 512);
+	printf("Load MRZ model: %s\n", errorMsgBuffer);
+
+	args.GetReturnValue().Set(Number::New(isolate, ret));
 }
 
-void Init(Local<Object> exports) {
+void Init(Local<Object> exports)
+{
 	NODE_SET_METHOD(exports, "initLicense", InitLicense);
-	NODE_SET_METHOD(exports, "createInstance", Create);
-	NODE_SET_METHOD(exports, "destroyInstance", Destroy);
-	NODE_SET_METHOD(exports, "decodeFileAsync", DecodeFileAsync);
-	NODE_SET_METHOD(exports, "decodeBufferAsync", DecodeBufferAsync);
-	NODE_SET_METHOD(exports, "loadModel", LoadModel);
 	NODE_SET_METHOD(exports, "getVersionNumber", GetVersionNumber);
 	MrzScanner::Init(exports);
 }
