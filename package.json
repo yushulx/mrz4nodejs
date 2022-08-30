@@ -1,0 +1,33 @@
+{
+  "name": "mrz4nodejs",
+  "version": "1.0.0",
+  "description": "Node.js bindings to Dynamsoft MRZ C/C++ SDK.",
+  "keywords": [
+    "MRZ",
+    "OCR",
+    "Passport",
+    "ID card",
+    "Visa",
+    "Travel document",
+    "Node",
+    "Node.js"
+  ],
+  "author": "yushulx",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yushulx/mrz4nodejs"
+  },
+  "homepage": "https://github.com/yushulx/mrz4nodejs#readme",
+  "main": "index.js",
+  "typings": "",
+  "scripts": {
+    "configure": "node-gyp configure",
+    "build": "node-gyp configure build --jobs max",
+    "clean": "node-gyp clean"
+  },
+  "gypfile": true,
+  "devDependencies": {
+    "@types/node": "^18.7.14"
+  }
+}
