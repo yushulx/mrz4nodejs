@@ -67,7 +67,7 @@ Basic steps:
 
 ## Sample Code
 
-[https://github.com/yushulx/mrz4nodejs/blob/main/test.js](https://github.com/yushulx/mrz4nodejs/blob/main/test.js)
+[https://github.com/yushulx/mrz4nodejs/tree/main/examples](https://github.com/yushulx/mrz4nodejs/tree/main/examples)
 
 
 ![Node.js MRZ scanner SDK](https://www.dynamsoft.com/codepool/img/2022/02/node-js-mrz-sdk.png)
