@@ -1,6 +1,6 @@
 # Node.js MRZ Scanner SDK
 
-The Node.js MRZ (Machine Readable Zone) Scanner SDK is Node binding to [Dynamsoft MRZ C++ SDK](https://www.dynamsoft.com/label-recognition/overview/). It helps developers to build Node.js MRZ scanning applications on Windows and Linux.
+The Node.js MRZ (Machine Readable Zone) Scanner SDK is Node binding to [Dynamsoft MRZ C++ SDK](https://www.dynamsoft.com/label-recognition/overview/). It helps developers to build Node.js applications for scanning passport, Visa, ID card and travel documents on Windows and Linux.
 
 
 ## License Key 

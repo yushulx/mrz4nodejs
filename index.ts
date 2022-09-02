@@ -52,6 +52,18 @@ class MrzScanner {
         });
     }
 
+    decodeBufferAsync(buffer: Buffer, width: number, height: number, stride: number): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.obj.decodeBufferAsync(buffer, width, height, stride, (err, result) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    }
+
     parseTwoLines(line1: string, line2: string): any {
         let mrzInfo: any = {};
         let type = line1.substring(0, 1);

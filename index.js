@@ -46,6 +46,19 @@ var MrzScanner = /** @class */ (function () {
             });
         });
     };
+    MrzScanner.prototype.decodeBufferAsync = function (buffer, width, height, stride) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            _this.obj.decodeBufferAsync(buffer, width, height, stride, function (err, result) {
+                if (err) {
+                    reject(err);
+                }
+                else {
+                    resolve(result);
+                }
+            });
+        });
+    };
     MrzScanner.prototype.parseTwoLines = function (line1, line2) {
         var mrzInfo = {};
         var type = line1.substring(0, 1);

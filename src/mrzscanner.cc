@@ -234,8 +234,7 @@ void MrzScanner::DecodeBufferAsync(const FunctionCallbackInfo<Value> &args)
 	int width = args[1]->Int32Value(context).ToChecked();				  // image width
 	int height = args[2]->Int32Value(context).ToChecked();				  // image height
 	int stride = args[3]->Int32Value(context).ToChecked();				  // stride
-	int iFormat = args[4]->Int32Value(context).ToChecked();				  // mrz types
-	Local<Function> cb = Local<Function>::Cast(args[5]);				  // javascript callback function
+	Local<Function> cb = Local<Function>::Cast(args[4]);				  // javascript callback function
 
 	// initialize MRZWorker
 	MRZWorker *worker = new MRZWorker;
