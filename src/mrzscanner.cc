@@ -301,25 +301,29 @@ void MrzScanner::Init(Local<Object> exports)
 		.FromJust();
 }
 
-void MrzScanner::New(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-  Local<Context> context = isolate->GetCurrentContext();
+void MrzScanner::New(const FunctionCallbackInfo<Value> &args)
+{
+	Isolate *isolate = args.GetIsolate();
+	Local<Context> context = isolate->GetCurrentContext();
 
-  if (args.IsConstructCall()) {
-    // Invoked as constructor: `new MrzScanner(...)`
-    MrzScanner* obj = new MrzScanner();
-    obj->Wrap(args.This());
-    args.GetReturnValue().Set(args.This());
-  } else {
-    // Invoked as plain function `MrzScanner(...)`, turn into construct call.
-    const int argc = 1;
-    Local<Value> argv[argc] = { args[0] };
-    Local<Function> cons =
-        args.Data().As<Object>()->GetInternalField(0).As<Function>();
-    Local<Object> result =
-        cons->NewInstance(context, argc, argv).ToLocalChecked();
-    args.GetReturnValue().Set(result);
-  }
+	if (args.IsConstructCall())
+	{
+		// Invoked as constructor: `new MrzScanner(...)`
+		MrzScanner *obj = new MrzScanner();
+		obj->Wrap(args.This());
+		args.GetReturnValue().Set(args.This());
+	}
+	else
+	{
+		// Invoked as plain function `MrzScanner(...)`, turn into construct call.
+		const int argc = 1;
+		Local<Value> argv[argc] = {args[0]};
+		Local<Function> cons =
+			args.Data().As<Object>()->GetInternalField(0).As<Function>();
+		Local<Object> result =
+			cons->NewInstance(context, argc, argv).ToLocalChecked();
+		args.GetReturnValue().Set(result);
+	}
 }
 
 /*
@@ -331,11 +335,10 @@ void MrzScanner::LoadModel(const FunctionCallbackInfo<Value> &args)
 
 	MrzScanner *obj = ObjectWrap::Unwrap<MrzScanner>(args.Holder());
 
-	String::Utf8Value fileName(isolate, args[0]); // file name
-	char *pFileName = *fileName;
+	String::Utf8Value config(isolate, args[0]); // file name
 
 	char errorMsgBuffer[512];
-	int ret = DLR_AppendSettingsFromFile(obj->handler, pFileName, errorMsgBuffer, 512);
+	int ret = DLR_AppendSettingsFromString(obj->handler, *config, errorMsgBuffer, 512);
 	printf("Load MRZ model: %s\n", errorMsgBuffer);
 
 	args.GetReturnValue().Set(Number::New(isolate, ret));

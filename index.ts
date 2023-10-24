@@ -1,10 +1,10 @@
 if (process.platform === 'win32') {
     console.log('Windows');
 }
-else if(process.platform === 'linux') {
+else if (process.platform === 'linux') {
     console.log('Linux');
 }
-else if(process.platform === 'darwin') {
+else if (process.platform === 'darwin') {
     console.log('macOS');
 }
 else {
@@ -16,7 +16,7 @@ const fs = require('fs');
 const path = require('path');
 
 class MrzScanner {
-    obj : any;
+    obj: any;
     constructor() {
         this.obj = mrzscanner.MrzScanner();
     }
@@ -35,19 +35,22 @@ class MrzScanner {
         let config = JSON.parse(json);
         if (config['CharacterModelArray'][0]['DirectoryPath'] === 'model') {
             config['CharacterModelArray'][0]['DirectoryPath'] = path.join(modelDir, 'model');
-            fs.writeFileSync(modelPath, JSON.stringify(config));
+            // fs.writeFileSync(modelPath, JSON.stringify(config));
         }
-        return this.obj.loadModel(modelPath);
+        return this.obj.loadModel(JSON.stringify(config));
     }
 
     decodeFileAsync(filePath: string): Promise<any> {
         return new Promise((resolve, reject) => {
             this.obj.decodeFileAsync(filePath, (err, result) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(result);
-                }
+                setTimeout(() => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(result);
+                    }
+                }, 0);
+
             });
         });
     }
@@ -55,11 +58,13 @@ class MrzScanner {
     decodeBufferAsync(buffer: Buffer, width: number, height: number, stride: number): Promise<any> {
         return new Promise((resolve, reject) => {
             this.obj.decodeBufferAsync(buffer, width, height, stride, (err, result) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(result);
-                }
+                setTimeout(() => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(result);
+                    }
+                }, 0);
             });
         });
     }

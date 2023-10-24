@@ -29,20 +29,22 @@ var MrzScanner = /** @class */ (function () {
         var config = JSON.parse(json);
         if (config['CharacterModelArray'][0]['DirectoryPath'] === 'model') {
             config['CharacterModelArray'][0]['DirectoryPath'] = path.join(modelDir, 'model');
-            fs.writeFileSync(modelPath, JSON.stringify(config));
+            // fs.writeFileSync(modelPath, JSON.stringify(config));
         }
-        return this.obj.loadModel(modelPath);
+        return this.obj.loadModel(JSON.stringify(config));
     };
     MrzScanner.prototype.decodeFileAsync = function (filePath) {
         var _this = this;
         return new Promise(function (resolve, reject) {
             _this.obj.decodeFileAsync(filePath, function (err, result) {
-                if (err) {
-                    reject(err);
-                }
-                else {
-                    resolve(result);
-                }
+                setTimeout(function () {
+                    if (err) {
+                        reject(err);
+                    }
+                    else {
+                        resolve(result);
+                    }
+                }, 0);
             });
         });
     };
@@ -50,12 +52,14 @@ var MrzScanner = /** @class */ (function () {
         var _this = this;
         return new Promise(function (resolve, reject) {
             _this.obj.decodeBufferAsync(buffer, width, height, stride, function (err, result) {
-                if (err) {
-                    reject(err);
-                }
-                else {
-                    resolve(result);
-                }
+                setTimeout(function () {
+                    if (err) {
+                        reject(err);
+                    }
+                    else {
+                        resolve(result);
+                    }
+                }, 0);
             });
         });
     };
