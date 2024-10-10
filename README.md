@@ -4,7 +4,7 @@ The Node.js MRZ (Machine Readable Zone) Scanner SDK is Node binding to [Dynamsof
 
 
 ## License Key 
-Get a [30-day FREE trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dlr) to activate the SDK.
+Get a [30-day FREE trial license](https://www.dynamsoft.com/customer/license/trialLicense/?product=dcv&package=cross-platform) to activate the SDK.
 
 ## Pre-requisites
 - [Node.js](https://nodejs.org/en/download/)
