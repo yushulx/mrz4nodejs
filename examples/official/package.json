@@ -1,0 +1,30 @@
+{
+  "name": "official",
+  "version": "1.0.0",
+  "description": "Command-line MRZ scanner built on dynamsoft-capture-vision-for-node",
+  "main": "mrz.js",
+  "bin": {
+    "mrz": "./mrz.js"
+  },
+  "scripts": {
+    "start": "node mrz.js",
+    "test:passport": "node mrz.js ..\\..\\images\\1.png"
+  },
+  "keywords": [
+    "mrz",
+    "passport",
+    "id-card",
+    "visa",
+    "ocr",
+    "dynamsoft",
+    "capture-vision",
+    "cli"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dynamsoft-capture-vision-for-node": "3.2.5002",
+    "dynamsoft-capture-vision-for-node-model": "3.2.5001"
+  }
+}
