@@ -60,7 +60,7 @@ also accept raw buffers).
 
 ```
 Dynamsoft Capture Vision (Node) - MRZ command-line scanner
-SDK version  : js:3.2.50.20251229;cpp:3.0.10.3895
+SDK version  : js:3.6.4002.20261019;cpp:3.6.40.9167
 Template     : ReadPassportAndId
 
 File: ..\..\images\1.png
@@ -92,11 +92,13 @@ trial key embedded in `mrz.js`.
 
 ## Notes / Pitfalls
 
-- **Model file not found**: the `MRZScanner.json` template shipped with the
-  package omits `MRZLocalization` from `CaptureVisionModelOptions`. Without it,
-  the neural-network localization stage (`LM_NEURAL_NETWORK`) fails with
-  `Model file is not found` (`dcvErrorCode -10078`). `mrz.js` injects the
-  missing model declarations at startup (see `loadMrzSettings()`).
+- **Model file not found**: `3.2.x` shipped an `MRZScanner.json` template that
+  omitted `MRZLocalization` from `CaptureVisionModelOptions`. Without it, the
+  neural-network localization stage (`LM_NEURAL_NETWORK`) failed with
+  `Model file is not found` (`dcvErrorCode -10078`). `3.6.4000` and later
+  declare all four MRZ models, so the template loads as-is; `mrz.js` still
+  injects any missing declaration at startup as a no-op guard for older
+  packages (see `loadMrzSettings()`).
 - **Process exit**: `CaptureVisionRouter.terminateIdleWorkers()` is called at
   the end so the SDK's worker pool does not keep the Node.js process alive.
 - The `dynamsoft-capture-vision-for-node-model` package is a **required** peer
