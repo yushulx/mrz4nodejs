@@ -1,69 +1,268 @@
-if (process.platform === 'win32') {
-    console.log('Windows');
-}
-else if (process.platform === 'linux') {
-    console.log('Linux');
-}
-else if (process.platform === 'darwin') {
-    console.log('macOS');
-}
-else {
-    console.log('Unknown Operating System');
-}
-var mrzscanner = require('./build/Release/mrzscanner');
-var fs = require('fs');
-var path = require('path');
-var MrzScanner = /** @class */ (function () {
-    function MrzScanner() {
-        this.obj = mrzscanner.MrzScanner();
+'use strict';
+
+/**
+ * mrz4nodejs
+ *
+ * Node.js MRZ (Machine Readable Zone) scanner for passports, ID cards and visas.
+ *
+ * The public API is unchanged, but the recognition engine is now the pure
+ * JavaScript `dynamsoft-capture-vision-for-node` SDK - no node-gyp build step
+ * and no prebuilt native addon.
+ */
+
+const fs = require('node:fs');
+const path = require('node:path');
+
+const {
+    CaptureVisionRouter,
+    LicenseManager,
+    EnumImagePixelFormat
+} = require('dynamsoft-capture-vision-for-node');
+
+/** Preset template that covers passports, ID cards and visas. */
+const DEFAULT_TEMPLATE = 'ReadPassportAndId';
+
+/** Templates shipped inside the SDK for MRZ documents. */
+const MRZ_TEMPLATES = ['ReadPassportAndId', 'ReadPassport', 'ReadId', 'ReadVisa', 'ReadMRZ'];
+
+/**
+ * `Templates/MRZScanner.json` ships without declaring these models, which makes
+ * the neural-network localization stage fail with -10078 (model file not found).
+ */
+const REQUIRED_MODELS = [
+    { Name: 'MRZLocalization', MaxModelInstances: 4 },
+    { Name: 'MRZCharRecognition', MaxModelInstances: 4 },
+    { Name: 'MRZTextLineRecognition', MaxModelInstances: 1 }
+];
+
+let settingsApplied = false;
+let activeTemplate = DEFAULT_TEMPLATE;
+var inflight = 0;
+var idleTimer = null;
+
+/**
+ * The SDK keeps a worker pool alive, which would keep short-lived scripts
+ * running forever. Shut the idle workers down shortly after the last decode.
+ */
+function scheduleIdleTermination() {
+    if (idleTimer) {
+        clearTimeout(idleTimer);
     }
-    MrzScanner.initLicense = function (license) {
-        return mrzscanner.initLicense(license);
-    };
-    MrzScanner.getVersionNumber = function () {
-        return mrzscanner.getVersionNumber();
-    };
-    MrzScanner.prototype.loadModel = function (modelDir) {
-        var modelPath = path.join(modelDir, 'MRZ.json');
-        var json = fs.readFileSync(modelPath);
-        var config = JSON.parse(json);
-        if (config['CharacterModelArray'][0]['DirectoryPath'] === 'model') {
-            config['CharacterModelArray'][0]['DirectoryPath'] = path.join(modelDir, 'model');
-            // fs.writeFileSync(modelPath, JSON.stringify(config));
+    idleTimer = setTimeout(function () {
+        idleTimer = null;
+        if (inflight === 0) {
+            CaptureVisionRouter.terminateIdleWorkers().catch(function () { });
         }
-        return this.obj.loadModel(JSON.stringify(config));
-    };
-    MrzScanner.prototype.decodeFileAsync = function (filePath) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.obj.decodeFileAsync(filePath, function (err, result) {
-                setTimeout(function () {
-                    if (err) {
-                        reject(err);
-                    }
-                    else {
-                        resolve(result);
-                    }
-                }, 0);
+    }, 100);
+    if (typeof idleTimer.unref === 'function') {
+        idleTimer.unref();
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Settings                                                            */
+/* ------------------------------------------------------------------ */
+
+function sdkRoot() {
+    return path.dirname(path.dirname(require.resolve('dynamsoft-capture-vision-for-node')));
+}
+
+function withModels(template) {
+    const models = (template.CaptureVisionModelOptions = template.CaptureVisionModelOptions || []);
+    const declared = new Set(models.map(function (model) { return model.Name; }));
+    REQUIRED_MODELS.forEach(function (model) {
+        if (!declared.has(model.Name)) {
+            models.push({ Name: model.Name, MaxModelInstances: model.MaxModelInstances });
+        }
+    });
+    return template;
+}
+
+function defaultSettings() {
+    const templatePath = path.join(sdkRoot(), 'Templates', 'MRZScanner.json');
+    if (!fs.existsSync(templatePath)) {
+        throw new Error('mrz4nodejs: cannot find ' + templatePath + '. Reinstall dynamsoft-capture-vision-for-node.');
+    }
+    return withModels(JSON.parse(fs.readFileSync(templatePath, 'utf-8')));
+}
+
+/**
+ * The old SDK took a model directory containing MRZ.json + model/.
+ * A Capture Vision template is still honoured when supplied, everything else is
+ * ignored because the models now ship with the npm package.
+ */
+function settingsFrom(modelDir) {
+    if (modelDir && typeof modelDir === 'string') {
+        const templatePath = path.join(modelDir, 'MRZ.json');
+        if (fs.existsSync(templatePath)) {
+            try {
+                const template = JSON.parse(fs.readFileSync(templatePath, 'utf-8'));
+                if (Array.isArray(template.CaptureVisionTemplates) && template.CaptureVisionTemplates.length) {
+                    return withModels(template);
+                }
+            } catch (err) {
+                // Legacy Dynamsoft Label Recognizer config - not usable here.
+            }
+        }
+    }
+    return defaultSettings();
+}
+
+function applySettings(modelDir) {
+    CaptureVisionRouter.initSettings(settingsFrom(modelDir));
+    settingsApplied = true;
+}
+
+/* ------------------------------------------------------------------ */
+/* Result mapping                                                      */
+/* ------------------------------------------------------------------ */
+
+function lerp(p, q, t) {
+    return { x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t };
+}
+
+/**
+ * The engine returns one item per MRZ block whose `text` holds every line.
+ * Split it back into one item per line (the shape this package always exposed)
+ * and interpolate a quad per line inside the block.
+ */
+function toLineResults(captured) {
+    const results = [];
+    const items = (captured && captured.textLineResultItems) || [];
+
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const lines = String(item.text || '').split('\n');
+        const points = (item.location && item.location.points) || [];
+        if (lines.length === 0 || points.length < 4) {
+            continue;
+        }
+
+        for (let n = 0; n < lines.length; n++) {
+            const t0 = n / lines.length;
+            const t1 = (n + 1) / lines.length;
+            const p1 = lerp(points[0], points[3], t0); // top-left
+            const p2 = lerp(points[1], points[2], t0); // top-right
+            const p3 = lerp(points[1], points[2], t1); // bottom-right
+            const p4 = lerp(points[0], points[3], t1); // bottom-left
+
+            results.push({
+                confidence: item.confidence,
+                text: lines[n],
+                x1: Math.round(p1.x),
+                y1: Math.round(p1.y),
+                x2: Math.round(p2.x),
+                y2: Math.round(p2.y),
+                x3: Math.round(p3.x),
+                y3: Math.round(p3.y),
+                x4: Math.round(p4.x),
+                y4: Math.round(p4.y)
             });
+        }
+    }
+
+    return results;
+}
+
+async function capture(source, templateName) {
+    if (!settingsApplied) {
+        applySettings(null);
+    }
+
+    inflight++;
+    if (idleTimer) {
+        clearTimeout(idleTimer);
+        idleTimer = null;
+    }
+
+    try {
+        const captured = await CaptureVisionRouter.captureAsync(source, {
+            templateName: templateName || activeTemplate,
+            dataTransferType: 'copy'
         });
-    };
-    MrzScanner.prototype.decodeBufferAsync = function (buffer, width, height, stride) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.obj.decodeBufferAsync(buffer, width, height, stride, function (err, result) {
-                setTimeout(function () {
-                    if (err) {
-                        reject(err);
-                    }
-                    else {
-                        resolve(result);
-                    }
-                }, 0);
-            });
-        });
-    };
-    MrzScanner.prototype.parseTwoLines = function (line1, line2) {
+        return toLineResults(captured);
+    } finally {
+        inflight--;
+        if (inflight === 0) {
+            scheduleIdleTermination();
+        }
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Public API                                                          */
+/* ------------------------------------------------------------------ */
+
+class MrzScanner {
+    constructor() {
+        this._modelDir = null;
+    }
+
+    static initLicense(license) {
+        try {
+            LicenseManager.initLicense(String(license));
+            return 0;
+        } catch (err) {
+            console.error('InitLicense: ' + (err && err.message ? err.message : err));
+            return err && typeof err.dcvErrorCode === 'number' ? err.dcvErrorCode : -1;
+        }
+    }
+
+    static getVersionNumber() {
+        return CaptureVisionRouter.version;
+    }
+
+    /**
+     * Kept for backward compatibility. The MRZ models ship with the npm package,
+     * so the directory is only used when it contains a Capture Vision template
+     * (`MRZ.json` with a `CaptureVisionTemplates` array).
+     */
+    loadModel(modelDir) {
+        this._modelDir = modelDir || null;
+        try {
+            applySettings(this._modelDir);
+            return 0;
+        } catch (err) {
+            console.error('loadModel: ' + (err && err.message ? err.message : err));
+            return -1;
+        }
+    }
+
+    /** Optional: switch the preset used by decode*Async(), e.g. 'ReadVisa'. */
+    setTemplate(templateName) {
+        if (MRZ_TEMPLATES.indexOf(templateName) === -1) {
+            throw new Error('mrz4nodejs: unknown template "' + templateName + '". Valid: ' + MRZ_TEMPLATES.join(', '));
+        }
+        activeTemplate = templateName;
+        settingsApplied = false;
+    }
+
+    async decodeFileAsync(filePath) {
+        return capture(String(filePath), activeTemplate);
+    }
+
+    async decodeBufferAsync(buffer, width, height, stride) {
+        const bytes = buffer instanceof Uint8Array
+            ? new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+            : new Uint8Array(buffer);
+
+        let format = EnumImagePixelFormat.IPF_RGB_888;
+        if (width === stride) {
+            format = EnumImagePixelFormat.IPF_GRAYSCALED;
+        } else if (width * 4 === stride) {
+            format = EnumImagePixelFormat.IPF_ARGB_8888;
+        }
+
+        return capture({
+            bytes: bytes,
+            width: width,
+            height: height,
+            stride: stride,
+            format: format
+        }, activeTemplate);
+    }
+
+    parseTwoLines(line1, line2) {
         var mrzInfo = {};
         var type = line1.substring(0, 1);
         if (!(/[I|P|V]/.test(type)))
@@ -150,9 +349,9 @@ var MrzScanner = /** @class */ (function () {
         expiry = expiry.slice(0, 4) + "-" + expiry.slice(4, 6) + "-" + expiry.slice(6);
         mrzInfo.expiry = expiry;
         return mrzInfo;
-    };
-    ;
-    MrzScanner.prototype.parseThreeLines = function (line1, line2, line3) {
+    }
+
+    parseThreeLines(line1, line2, line3) {
         var mrzInfo = {};
         var type = line1.substring(0, 1);
         if (!(/[I|P|V]/.test(type)))
@@ -216,7 +415,7 @@ var MrzScanner = /** @class */ (function () {
         expiry = expiry.slice(0, 4) + "-" + expiry.slice(4, 6) + "-" + expiry.slice(6);
         mrzInfo.expiry = expiry;
         return mrzInfo;
-    };
-    return MrzScanner;
-}());
+    }
+}
+
 module.exports = MrzScanner;

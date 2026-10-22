@@ -1,7 +1,7 @@
 {
   "name": "mrz4nodejs",
-  "version": "1.0.2",
-  "description": "Node.js bindings to Dynamsoft MRZ C/C++ SDK.",
+  "version": "2.0.0",
+  "description": "Node.js MRZ (passport, ID card, visa) scanner built on Dynamsoft Capture Vision - pure JavaScript, no native build step.",
   "keywords": [
     "MRZ",
     "OCR",
@@ -10,24 +10,36 @@
     "Visa",
     "Travel document",
     "Node",
-    "Node.js"
+    "Node.js",
+    "Dynamsoft"
   ],
   "author": "yushulx",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yushulx/mrz4nodejs"
+    "url": "git+https://github.com/yushulx/mrz4nodejs.git"
   },
   "homepage": "https://github.com/yushulx/mrz4nodejs#readme",
   "main": "index.js",
-  "typings": "",
-  "scripts": {
-    "configure": "node-gyp configure",
-    "build": "node-gyp configure build --jobs max",
-    "clean": "node-gyp clean"
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=16"
   },
-  "gypfile": true,
+  "scripts": {
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "dynamsoft-capture-vision-for-node": "3.6.4002",
+    "dynamsoft-capture-vision-for-node-model": "3.6.4000"
+  },
   "devDependencies": {
-    "@types/node": "^18.7.14"
+    "@types/node": "^20.14.2",
+    "pngjs": "^7.0.0"
   }
 }
