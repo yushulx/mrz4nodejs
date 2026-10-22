@@ -171,8 +171,10 @@ Facts gathered while investigating:
 
 It reproduces with `dynamsoft-capture-vision-for-node` 3.6.4000 and 3.6.4002 (same native library
 3.6.40.9167), with and without worker threads, and with every MRZ preset - so it comes from the native
-Label Recognizer teardown, not from this wrapper. `npm test` detects the situation and reports success when
-every check passed before the crash.
+Label Recognizer teardown, not from this wrapper. Dynamsoft's own reference CLI
+(`examples/official/mrz.js`, which talks to the SDK directly) shows the same behaviour: exit `0` on Windows,
+exit `139` on Linux. `npm test` detects the situation and reports success when every check passed before the
+crash.
 
 ## Examples
 
