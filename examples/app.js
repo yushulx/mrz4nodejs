@@ -69,4 +69,10 @@ scanner.loadModel(path.dirname(require.resolve('..')));
 })().catch(function (err) {
     console.error(err);
     process.exitCode = 1;
+}).finally(function () {
+    if (process.platform === 'linux') {
+        // Upstream issue: the SDK segfaults while the process is torn down after
+        // an MRZ capture on Linux. Results above are complete.
+        console.warn('\n[note] on Linux the SDK currently crashes while exiting after an MRZ capture.');
+    }
 });

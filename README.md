@@ -155,6 +155,25 @@ Basic steps:
 - **Decoding runs in worker threads** managed by the SDK, so it never blocks the event loop. The worker pool
   is shut down shortly after the last decode, which lets short-lived scripts exit on their own.
 
+## Known Issue (Linux)
+
+`dynamsoft-capture-vision-for-node` currently **segfaults while the process is being torn down** after an MRZ
+capture on Linux. The decoding itself is unaffected - results are returned correctly, and long-running
+processes (servers) are fine - but a CLI that has scanned a passport/ID exits with code `139` instead of `0`.
+
+Facts gathered while investigating:
+
+| Scenario | Windows | Linux |
+|---|---|---|
+| Barcode capture (`barcode4nodejs`) | exit 0 | exit 0 |
+| MRZ capture (`mrz4nodejs`) | exit 0 | **SIGSEGV at exit** |
+| MRZ settings loaded, no capture | exit 0 | exit 0 |
+
+It reproduces with `dynamsoft-capture-vision-for-node` 3.6.4000 and 3.6.4002 (same native library
+3.6.40.9167), with and without worker threads, and with every MRZ preset - so it comes from the native
+Label Recognizer teardown, not from this wrapper. `npm test` detects the situation and reports success when
+every check passed before the crash.
+
 ## Examples
 
 - [Command line](./examples/app.js)
