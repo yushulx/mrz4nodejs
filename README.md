@@ -168,13 +168,18 @@ Facts gathered while investigating:
 | Barcode capture (`barcode4nodejs`) | exit 0 | exit 0 |
 | MRZ capture (`mrz4nodejs`) | exit 0 | **SIGSEGV at exit** |
 | MRZ settings loaded, no capture | exit 0 | exit 0 |
+| C++ MRZ sample, SDK bundled with it (3.6.10) | - | exit 0 |
+| C++ MRZ sample, **using the npm package's own 3.6.40 libraries** | - | exit 0 |
 
 It reproduces with `dynamsoft-capture-vision-for-node` 3.6.4000 and 3.6.4002 (same native library
-3.6.40.9167), with and without worker threads, and with every MRZ preset - so it comes from the native
-Label Recognizer teardown, not from this wrapper. Dynamsoft's own reference CLI
+3.6.40.9167), with and without worker threads, and with every MRZ preset. The same engine build works fine in
+a pure C++ process (the `cmake-cpp-barcode-qrcode-mrz` sample, linked against the very libraries shipped in
+`dynamsoft-capture-vision-for-node-lib-linux-x64`), so **the defect is in the Node.js wrapper
+(`libdcv-nodejs-wrapper.so` / koffi), not in the C++ SDK**. Dynamsoft's own Node.js reference CLI
 (`examples/official/mrz.js`, which talks to the SDK directly) shows the same behaviour: exit `0` on Windows,
-exit `139` on Linux. `npm test` detects the situation and reports success when every check passed before the
-crash.
+exit `139` on Linux.
+
+`npm test` detects the situation and reports success when every check passed before the crash.
 
 ## Examples
 

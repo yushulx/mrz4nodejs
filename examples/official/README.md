@@ -101,13 +101,15 @@ trial key embedded in `mrz.js`.
   packages (see `loadMrzSettings()`).
 - **Process exit**: `CaptureVisionRouter.terminateIdleWorkers()` is called at
   the end so the SDK's worker pool does not keep the Node.js process alive.
-- **Linux exit crash (SDK bug)**: after an MRZ capture the native Label
-  Recognizer segfaults while the process is being torn down, so this CLI prints
-  the correct result and then exits with code `139`. It happens with the SDK on
-  its own (no `mrz4nodejs` involved), with 3.6.4000 and 3.6.4002, and cannot be
-  avoided with `terminateIdleWorkers()` / `process.exit()`; Windows and macOS
-  exit with `0`. Long-running processes are unaffected because the crash only
-  happens during teardown.
+- **Linux exit crash (Node.js binding bug)**: after an MRZ capture the process
+  segfaults while it is being torn down, so this CLI prints the correct result
+  and then exits with code `139`. It happens with the Node.js package on its own
+  (no `mrz4nodejs` involved), with 3.6.4000 and 3.6.4002, and cannot be avoided
+  with `terminateIdleWorkers()` / `process.exit()`; Windows and macOS exit with
+  `0`. A pure C++ program linked against the very same SDK libraries exits
+  cleanly, so the defect is in the Node.js wrapper rather than in the C++ SDK.
+  Long-running processes are unaffected because the crash only happens during
+  teardown.
 - The `dynamsoft-capture-vision-for-node-model` package is a **required** peer
   dependency for text recognition tasks — install it explicitly.
 
