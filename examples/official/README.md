@@ -31,16 +31,16 @@ node mrz.js <image-path> [image-path ...] [options]
 
 ```bash
 # Recognize MRZ from a passport image (passport + ID + visa + plain MRZ template)
-node mrz.js ..\..\images\1.png
+node mrz.js ../../images/1.png
 
 # Multiple files
 node mrz.js passport.png id-card.jpg visa.jpg
 
 # Use a specific MRZ template
-node mrz.js ..\..\images\1.png --template ReadPassport
+node mrz.js ../../images/1.png --template ReadPassport
 
 # Print the raw parsed result as JSON
-node mrz.js ..\..\images\1.png --json
+node mrz.js ../../images/1.png --json
 ```
 
 ### Options
@@ -63,7 +63,7 @@ Dynamsoft Capture Vision (Node) - MRZ command-line scanner
 SDK version  : js:3.6.4002.20261019;cpp:3.6.40.9167
 Template     : ReadPassportAndId
 
-File: ..\..\images\1.png
+File: ../../images/1.png
 Code type   : MRTD_TD3_PASSPORT
 Issuing st. : UTO
 Nationality : UTO
@@ -101,6 +101,13 @@ trial key embedded in `mrz.js`.
   packages (see `loadMrzSettings()`).
 - **Process exit**: `CaptureVisionRouter.terminateIdleWorkers()` is called at
   the end so the SDK's worker pool does not keep the Node.js process alive.
+- **Linux exit crash (SDK bug)**: after an MRZ capture the native Label
+  Recognizer segfaults while the process is being torn down, so this CLI prints
+  the correct result and then exits with code `139`. It happens with the SDK on
+  its own (no `mrz4nodejs` involved), with 3.6.4000 and 3.6.4002, and cannot be
+  avoided with `terminateIdleWorkers()` / `process.exit()`; Windows and macOS
+  exit with `0`. Long-running processes are unaffected because the crash only
+  happens during teardown.
 - The `dynamsoft-capture-vision-for-node-model` package is a **required** peer
   dependency for text recognition tasks — install it explicitly.
 
