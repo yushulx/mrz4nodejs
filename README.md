@@ -150,36 +150,10 @@ Basic steps:
   and a quad is interpolated per line, so the historical `result[0..2].text` shape is preserved.
 - **Errors are reported.** Failures (invalid license, unreadable file) reject the promise. Older versions
   resolved with an empty array.
-- **`getVersionNumber()`** returns the Capture Vision version, e.g.
-  `js:3.6.4002.20261019;cpp:3.6.40.9167`.
+- **`getVersionNumber()`** returns the version string reported by the SDK itself, e.g.
+  `js:3.6.4002.20261019;cpp:3.6.40.9167` (Dynamsoft did not bump the JS prefix in 3.6.4003).
 - **Decoding runs in worker threads** managed by the SDK, so it never blocks the event loop. The worker pool
   is shut down shortly after the last decode, which lets short-lived scripts exit on their own.
-
-## Known Issue (Linux)
-
-`dynamsoft-capture-vision-for-node` currently **segfaults while the process is being torn down** after an MRZ
-capture on Linux. The decoding itself is unaffected - results are returned correctly, and long-running
-processes (servers) are fine - but a CLI that has scanned a passport/ID exits with code `139` instead of `0`.
-
-Facts gathered while investigating:
-
-| Scenario | Windows | Linux |
-|---|---|---|
-| Barcode capture (`barcode4nodejs`) | exit 0 | exit 0 |
-| MRZ capture (`mrz4nodejs`) | exit 0 | **SIGSEGV at exit** |
-| MRZ settings loaded, no capture | exit 0 | exit 0 |
-| C++ MRZ sample, SDK bundled with it (3.6.10) | - | exit 0 |
-| C++ MRZ sample, **using the npm package's own 3.6.40 libraries** | - | exit 0 |
-
-It reproduces with `dynamsoft-capture-vision-for-node` 3.6.4000 and 3.6.4002 (same native library
-3.6.40.9167), with and without worker threads, and with every MRZ preset. The same engine build works fine in
-a pure C++ process (the `cmake-cpp-barcode-qrcode-mrz` sample, linked against the very libraries shipped in
-`dynamsoft-capture-vision-for-node-lib-linux-x64`), so **the defect is in the Node.js wrapper
-(`libdcv-nodejs-wrapper.so` / koffi), not in the C++ SDK**. Dynamsoft's own Node.js reference CLI
-(`examples/official/mrz.js`, which talks to the SDK directly) shows the same behaviour: exit `0` on Windows,
-exit `139` on Linux.
-
-`npm test` detects the situation and reports success when every check passed before the crash.
 
 ## Examples
 

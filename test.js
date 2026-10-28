@@ -8,58 +8,10 @@
  */
 
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
 const { PNG } = require('pngjs');
 
 const MrzScanner = require('./index.js');
-
-const RESULT_FILE = path.join(os.tmpdir(), 'mrz4nodejs-test-result.json');
-const IS_CHILD = process.env.MRZ_TEST_CHILD === '1';
-
-/**
- * Known upstream issue: `dynamsoft-capture-vision-for-node` segfaults while the
- * process is being torn down after a Label Recognizer (MRZ) capture on Linux.
- * The decoding itself is fine - the crash happens on exit, after every result
- * has been produced.
- *
- * To keep CI meaningful, on Linux the suite is executed in a child process and
- * the crash is tolerated as long as the child reported that every check passed.
- */
-if (process.platform === 'linux' && !IS_CHILD) {
-    const { spawnSync } = require('node:child_process');
-    try {
-        fs.unlinkSync(RESULT_FILE);
-    } catch (err) {
-        // ignore
-    }
-
-    const child = spawnSync(process.execPath, [__filename].concat(process.argv.slice(2)), {
-        encoding: 'utf8',
-        env: Object.assign({}, process.env, { MRZ_TEST_CHILD: '1' })
-    });
-
-    process.stdout.write(child.stdout || '');
-    process.stderr.write(child.stderr || '');
-
-    let report = null;
-    try {
-        report = JSON.parse(fs.readFileSync(RESULT_FILE, 'utf-8'));
-    } catch (err) {
-        // ignore, fall back to the exit code
-    }
-
-    if (child.status === 0) {
-        process.exit(0);
-    }
-    if (report && report.failed === 0 && child.signal === 'SIGSEGV') {
-        console.warn('\n[known issue] the SDK segfaults while exiting after an MRZ capture on Linux.');
-        console.warn('All ' + report.passed + ' checks passed before that, treating the run as successful.');
-        console.warn('Tracking: https://github.com/yushulx/mrz4nodejs/issues');
-        process.exit(0);
-    }
-    process.exit(1);
-}
 
 const LICENSE = process.env.DCV_LICENSE ||
     'DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==';
@@ -176,11 +128,6 @@ function pngToBuffers(file) {
     check('setTemplate(ReadMRZ)', signature(viaReadMrz) === signature(viaDefault), signature(viaReadMrz));
 
     console.log('\n==== ' + pass + ' passed, ' + fail + ' failed ====');
-    try {
-        fs.writeFileSync(RESULT_FILE, JSON.stringify({ passed: pass, failed: fail }));
-    } catch (err) {
-        // ignore
-    }
     if (fail) {
         process.exitCode = 1;
     }

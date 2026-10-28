@@ -42,6 +42,5 @@ node mrz.js ../../images/1.png
 node mrz.js ../../images/3.jpg --template ReadId
 ```
 
-> On Linux this sample (and anything else that scans an MRZ) prints the correct result and then the process
-> exits with code `139`: the SDK segfaults while tearing down the native Label Recognizer. See the
-> "Known Issue (Linux)" section in the [main README](../README.md).
+> Requires `dynamsoft-capture-vision-for-node@3.6.4003` or newer: 3.6.4000 - 3.6.4002 segfaulted while the
+> process was exiting after an MRZ capture on Linux.

@@ -1,6 +1,6 @@
 {
   "name": "mrz4nodejs",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Node.js MRZ (passport, ID card, visa) scanner built on Dynamsoft Capture Vision - pure JavaScript, no native build step.",
   "keywords": [
     "MRZ",
@@ -35,7 +35,7 @@
     "test": "node test.js"
   },
   "dependencies": {
-    "dynamsoft-capture-vision-for-node": "3.6.4002",
+    "dynamsoft-capture-vision-for-node": "3.6.4003",
     "dynamsoft-capture-vision-for-node-model": "3.6.4000"
   },
   "devDependencies": {
